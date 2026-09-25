@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AKGTK — Asesmen Kompetensi Guru & Tenaga Kependidikan</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+        :root {
+            --biru-utama: #005b9f; --biru-gelap: #004573; --biru-terang: #007bce;
+            --emas: #ffc107; --putih: #ffffff; --abu-latar: #f4f7fa;
+            --abu-tepi: #d8e2eb; --teks-utama: #1f2937; --teks-kedua: #4b5563;
+            --merah: #dc3545; --hijau: #28a745;
+        }
+        html { scroll-behavior: smooth; }
+        body { background: var(--putih); color: var(--teks-utama); line-height: 1.6; padding-top: 95px; }
+        .halaman { display: none; min-height: 100vh; flex-direction: column; }
+        .halaman.aktif { display: flex; }
+
+        /* === HEADER TETAP === */
+        .atas-bar {
+            background: linear-gradient(90deg, var(--biru-gelap) 0%, var(--biru-utama) 100%);
+            color: var(--putih); padding: 6px 30px; font-size: 13px;
+            display: flex; justify-content: space-between; flex-wrap: wrap;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .atas-bar.sembunyi { opacity: 0; transform: translateY(-100%); }
+        .atas-bar a { color: var(--emas); text-decoration: none; }
+
+        .kepala {
+            background: var(--putih); padding: 12px 30px; border-bottom: 3px solid var(--emas);
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;
+            position: fixed; top: 32px; left: 0; width: 100%; z-index: 999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease;
+        }
+        .kepala.gulir { padding: 8px 30px; top: 0; box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+
+        .logo-baris { display: flex; align-items: center; gap: 15px; }
+        .logo-img { height: 50px; transition: height 0.3s ease; }
+        .kepala.gulir .logo-img { height: 40px; }
+        .logo-teks h1 { font-size: 17px; color: var(--biru-utama); transition: font-size 0.3s ease; }
+        .kepala.gulir .logo-teks h1 { font-size: 15px; }
+        .logo-teks p { font-size: 12px; color: var(--teks-kedua); }
+
+        .navi a {
+            color: var(--biru-utama); text-decoration: none; padding: 10px 14px;
+            font-weight: 500; display: inline-block;
+            border-bottom: 3px solid transparent; transition: all 0.3s ease;
+        }
+        .navi a:hover, .navi a.aktif { color: var(--biru-terang); border-bottom-color: var(--emas); transform: translateY(-2px); }
+        .navi a.tombol-masuk { background: var(--biru-utama); color: white; border-radius: 5px; margin-left: 6px; border-bottom: none; }
+        .navi a.tombol-masuk:hover { background: var(--biru-terang); transform: scale(1.05); }
+
+        /* === BANNER BERANDA === */
+        .banner-gambar { width: 100%; height: 300px; overflow: hidden; position: relative; background: var(--biru-utama); }
+        .banner-gambar img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-tumpuk {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 20px;
+            background: transparent;
+        }
+        .banner-tumpuk .salam { font-size: 20px; margin-bottom: 5px; text-shadow: 0 2px 6px rgba(0,0,0,0.7); }
+        .banner-tumpuk .judul-besar { font-size: 28px; margin-bottom: 10px; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+        .banner-tumpuk .keterangan { font-size: 16px; max-width: 800px; text-shadow: 0 2px 6px rgba(0,0,0,0.7); }
+
+        /* === KONTEN BERANDA === */
+        .wadah { max-width: 1100px; margin: 0 auto; padding: 35px 30px; flex: 1; }
+        .bagian { margin-bottom: 45px; }
+        .bagian h3 { font-size: 21px; color: var(--biru-utama); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--emas); display: inline-block; }
+        .bagian p { margin-bottom: 12px; font-size: 15px; color: var(--teks-kedua); }
+        .kotak-jadwal { background: var(--abu-latar); border-radius: 10px; padding: 28px; text-align: center; border-left: 4px solid var(--biru-utama); margin: 25px 0; }
+        .kotak-jadwal h4 { font-size: 17px; margin-bottom: 14px; color: var(--biru-utama); }
+        .kotak-jadwal input[type="text"] { padding: 11px 16px; width: 320px; max-width: 100%; border: 2px solid var(--abu-tepi); border-radius: 6px; font-size: 15px; margin-right: 10px; margin-bottom: 10px; }
+        .tombol-utama { padding: 11px 24px; background: var(--biru-utama); color: white; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .tombol-utama:hover { background: var(--biru-terang); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,91,159,0.3); }
+        .tombol-batas { padding: 10px 22px; background: transparent; color: var(--biru-utama); border: 2px solid var(--biru-utama); border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .tombol-batas:hover { background: rgba(0,91,159,0.05); }
+
+        /* === HALAMAN LOGIN — FORM KIRI, BANNER KANAN (DESAIN TIDAK DIUBAH) === */
+        .wadah-login {
+            flex: 1; display: flex; align-items: stretch; justify-content: center; padding: 0; background: var(--putih);
+        }
+        .login-form-kiri {
+            width: 50%; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 40px 30px; background: var(--putih);
+            animation: masukKiri 0.8s ease-out;
+        }
+        @keyframes masukKiri {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .login-banner-kanan {
+            width: 50%; min-height: 100vh; position: relative; overflow: hidden;
+            animation: masukKanan 0.8s ease-out;
+        }
+        @keyframes masukKanan {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .login-banner-kanan img {
+            width: 100%; height: 100%; object-fit: cover; object-position: center;
+        }
+        .login-banner-teks {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 35px 40px;
+            background: linear-gradient(to top, rgba(0,69,115,0.95), rgba(0,69,115,0.6), transparent);
+            color: white;
+        }
+        .login-banner-teks h2 { font-size: 24px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .login-banner-teks p { font-size: 15px; opacity: 0.9; line-height: 1.7; }
+
+        .kotak-login {
+            width: 100%; max-width: 480px; padding: 35px 30px; border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--abu-tepi);
+        }
+        .login-logo { text-align: center; margin-bottom: 25px; }
+        .login-logo img { height: 60px; width: auto; }
+        .login-judul { text-align: center; margin-bottom: 25px; }
+        .login-judul .salam { font-size: 16px; color: var(--teks-kedua); }
+        .login-judul h2 { font-size: 20px; color: var(--biru-utama); font-weight: 700; text-transform: uppercase; margin: 8px 0; }
+        .login-judul .sub-judul { font-size: 14px; font-weight: 600; color: var(--teks-utama); }
+        .peringatan { background: #fef0f0; border-left: 4px solid var(--merah); padding: 12px 15px; border-radius: 4px; margin-bottom: 20px; display: none; }
+        .peringatan.tampil { display: block; animation: getar 0.5s ease; }
+        @keyframes getar { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+        .grup-input { margin-bottom: 18px; }
+        .grup-input label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--teks-utama); font-size: 14px; }
+        .grup-input input {
+            width: 100%; padding: 12px 15px; border: 2px solid var(--abu-tepi); border-radius: 6px;
+            font-size: 15px; background: var(--putih); transition: border-color 0.3s ease;
+        }
+        .grup-input input:focus { outline: none; border-color: var(--biru-utama); }
+        .grup-input input:disabled { background: var(--abu-latar); cursor: not-allowed; }
+        .bantuan { text-align: center; margin-top: 20px; font-size: 13px; color: var(--teks-kedua); }
+        .bantuan a { color: var(--biru-utama); text-decoration: none; }
+        .kembali-link { display: block; text-align: center; margin-top: 15px; color: var(--biru-utama); text-decoration: none; font-size: 14px; }
+
+        /* === HALAMAN ASESMEN === */
+        .info-peserta { background: var(--abu-latar); padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid var(--biru-utama); }
+        .info-peserta h3 { color: var(--biru-utama); margin-bottom: 12px; font-size: 17px; }
+        .baris { display: flex; padding: 6px 0; border-bottom: 1px solid var(--abu-tepi); font-size: 14px; }
+        .baris dt { width: 140px; font-weight: 600; color: var(--teks-kedua); }
+        .baris dd { flex: 1; color: var(--teks-utama); }
+
+        .nomor { display: inline-block; background: var(--biru-utama); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 10px; }
+        .soal-baris { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px dashed var(--abu-tepi); }
+        .soal-teks { font-size: 15px; margin-bottom: 12px; line-height: 1.7; }
+        .pilihan { display: block; padding: 10px 14px; margin: 8px 0; border: 2px solid var(--abu-tepi); border-radius: 6px; cursor: pointer; transition: all 0.25s ease; }
+        .pilihan:hover { border-color: var(--biru-terang); background: rgba(0,91,159,0.03); }
+        .pilihan.terpilih { border-color: var(--biru-utama); background: rgba(0,91,159,0.08); font-weight: 600; }
+        .pilihan input { margin-right: 8px; transform: scale(1.1); }
+
+        .baris-tombol { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
+        .tombol-kecil { flex: 1; min-width: 140px; padding: 10px; border: 2px solid var(--biru-utama); background: transparent; color: var(--biru-utama); border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .tombol-kecil:hover { background: rgba(0,91,159,0.05); }
+        .tombol-utama:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+        .berhasil { background: #f0f9f4; border-left: 4px solid var(--hijau); padding: 25px; border-radius: 6px; margin-bottom: 20px; display: none; text-align: center; }
+        .berhasil.tampil { display: block; }
+        .berhasil h3 { color: var(--hijau); margin-bottom: 10px; font-size: 18px; }
+        .nilai-akhir { font-size: 24px; font-weight: bold; color: var(--biru-utama); margin: 15px 0; }
+
+        .kaki { background: var(--biru-gelap); color: #b8c7d9; padding: 20px; text-align: center; font-size: 13px; margin-top: auto; }
+        .memuat { text-align: center; padding: 30px; color: var(--teks-kedua); }
+
+        /* === RESPONSIF === */
+        @media (max-width: 992px) {
+            .login-form-kiri, .login-banner-kanan { width: 100%; min-height: auto; }
+            .wadah-login { flex-direction: column; }
+            .login-banner-kanan { height: 260px; }
+        }
+        @media (max-width: 768px) {
+            body { padding-top: 85px; }
+            .atas-bar { display: none; }
+            .kepala { top: 0; padding: 10px 15px; flex-direction: column; text-align: center; }
+            .kepala.gulir { padding: 8px 15px; }
+            .wadah { padding: 20px 15px; }
+            .banner-gambar { height: 220px; }
+            .banner-tumpuk .judul-besar { font-size: 22px; }
+            .navi { margin-top: 10px; }
+            .navi a { padding: 8px 10px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- GANTI URL DI BAWAH INI DENGAN MILIK ANDA -->
+<script>
+const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbzXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/exec";
+</script>
+
+<!-- ========================================== BERANDA ========================================== -->
+<div class="halaman aktif" id="hal-beranda">
+    <div class="atas-bar" id="atasBar">
+        <div>Portal Resmi — Asesmen Kompetensi Guru & Tenaga Kependidikan</div>
+        <div><a href="https://kemenag.go.id" target="_blank">kemenag.go.id</a></div>
+    </div>
+    <header class="kepala" id="menuUtama">
+        <div class="logo-baris">
+            <img src="https://blogger.googleusercontent.com/img/a/AVvXsEg8G1WUhvnFCRVBSFn2wSdcHT9TiUxSnHbxoaEemMztlc1lD7Iaz9-t1yVznkDhUwCqRaMPaMLTm9S9EB00g81jkalMmcCfJewL5lSpYsxGTBEB15Gdt05UGqlsOfPtuHiLBz2aDWCjlTNK_KAb91mi6eybQ7Nep30lR2fmyr36hruoQit6bNR7JkIu=w300" alt="Logo Kemenag" class="logo-img">
+            <div class="logo-teks">
+                <h1>ASESMEN KOMPETENSI GURU & TENAGA KEPENDIDIKAN</h1>
+                <p>Kementerian Agama Republik Indonesia</p>
+            </div>
+        </div>
+        <nav class="navi">
+            <a href="#hal-beranda" class="aktif" onclick="tampilkanHalaman('beranda')">Beranda</a>
+            <a href="#tentang" onclick="tampilkanHalaman('beranda'); setTimeout(() => {document.querySelector('#tentang').scrollIntoView({behavior:'smooth',block:'start'});},100);">Tentang AKGTK</a>
+            <a href="#jadwal" onclick="tampilkanHalaman('beranda'); setTimeout(() => {document.querySelector('#jadwal').scrollIntoView({behavior:'smooth',block:'start'});},100);">Jadwal Asesmen</a>
+            <a href="#hal-login" class="tombol-masuk" onclick="tampilkanHalaman('login')">Masuk Asesmen</a>
+        </nav>
+    </header>
+
+    <div class="banner-gambar">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMxhJmgtlpe2nLErSACOFPDbUiOovqpZG1_yfLMfE6l1vdhSYoHuxWDBQziiWhROKSRrjqO5RpTw9Ge0-w36HHiyd82wvCEBstygytURnmDYLmOTAs05nvtuHQmouZOAjsJ24D34GKEu7l8zwQxiDHahsopYQoPiv8rDtXwnBU3Q03QbQMgJfehUzSeGA/s320/Cuplikan%20layar%202026-09-25%20103545.png" alt="Banner AKGTK">
+        <div class="banner-tumpuk">
+            <p class="salam">Selamat datang di</p>
+            <h2 class="judul-besar">Asesmen Kompetensi Guru dan Tenaga Kependidikan</h2>
+            <p class="keterangan">Memetakan kompetensi guru, kepala dan pengawas madrasah sebagai acuan pembinaan & pengembangan profesi pendidikan madrasah.</p>
+        </div>
+    </div>
+
+    <main class="wadah">
+        <section class="bagian" id="tentang">
+            <h3>Tentang AKGTK</h3>
+            <p><strong>Asesmen Kompetensi Guru dan Tenaga Kependidikan</strong>, disingkat <strong>AKGTK</strong> adalah asesmen yang dilakukan pada guru dan tenaga kependidikan madrasah sebagai metode pengukuran yang komprehensif untuk mendiagnosis kelebihan dan kelemahan kemampuan pedagogik dan profesional GTK.</p>
+            <p>Hasil asesmen dapat digunakan oleh Kementerian Agama untuk Pengembangan Keprofesian Berkelanjutan bagi GTK dalam rangka meningkatkan kualitas pendidikan Madrasah.</p>
+        </section>
+
+        <section class="bagian" id="jadwal">
+            <h3>Jadwal Asesmen AKGTK</h3>
+            <p>Masukkan User ID / NIP / NUPTK untuk melihat jadwal pelaksanaan asesmen Anda.</p>
+            <div class="kotak-jadwal">
+                <h4>Masukan User ID Untuk Melihat Jadwal Asesmen</h4>
+                <form onsubmit="event.preventDefault();">
+                    <input type="text" placeholder="Contoh: 198501012010011001">
+                    <button type="button" class="tombol-utama">Lihat Jadwal</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="kaki">
+        <p>© 2026 Direktorat Jenderal Pendidikan Islam — Kementerian Agama Republik Indonesia</p>
+        <p style="margin-top:5px;">akgtk.kemenag.go.id | emisgtk.kemenag.go.id</p>
+    </footer>
+</div>
+
+<!-- ========================================== LOGIN ========================================== -->
+<div class="halaman" id="hal-login">
+    <div class="atas-bar" id="atasBarLogin">
+        <div>Form Login — AKGTK</div>
+        <div><a href="#" onclick="tampilkanHalaman('beranda')">← Kembali ke Beranda</a></div>
+    </div>
+    <header class="kepala" id="menuUtamaLogin">
+        <div class="logo-baris">
+            <img src="https://blogger.googleusercontent.com/img/a/AVvXsEg8G1WUhvnFCRVBSFn2wSdcHT9TiUxSnHbxoaEemMztlc1lD7Iaz9-t1yVznkDhUwCqRaMPaMLTm9S9EB00g81jkalMmcCfJewL5lSpYsxGTBEB15Gdt05UGqlsOfPtuHiLBz2aDWCjlTNK_KAb91mi6eybQ7Nep30lR2fmyr36hruoQit6bNR7JkIu=w300" alt="Logo Kemenag" class="logo-img">
+            <div class="logo-teks">
+                <h1>ASESMEN KOMPETENSI GURU & TENAGA KEPENDIDIKAN</h1>
+                <p>Kementerian Agama Republik Indonesia</p>
+            </div>
+        </div>
+        <nav class="navi">
+            <a href="#hal-beranda" onclick="tampilkanHalaman('beranda')">Beranda</a>
+            <a href="#hal-login" class="tombol-masuk aktif" onclick="tampilkanHalaman('login')">Masuk Asesmen</a>
+        </nav>
+    </header>
+
+    <div class="wadah-login">
+        <!-- FORM LOGIN DI SEBELAH KIRI -->
+        <div class="login-form-kiri">
+            <div class="kotak-login">
+                <div class="login-logo">
+                    <img src="https://blogger.googleusercontent.com/img/a/AVvXsEg8G1WUhvnFCRVBSFn2wSdcHT9TiUxSnHbxoaEemMztlc1lD7Iaz9-t1yVznkDhUwCqRaMPaMLTm9S9EB00g81jkalMmcCfJewL5lSpYsxGTBEB15Gdt05UGqlsOfPtuHiLBz2aDWCjlTNK_KAb91mi6eybQ7Nep30lR2fmyr36hruoQit6bNR7JkIu=w300" alt="Logo Kemenag">
+                </div>
+
+                <div class="login-judul">
+                    <p class="salam">Selamat datang di</p>
+                    <h2>Asesmen Kompetensi Guru dan Tenaga Kependidikan</h2>
+                    <p class="sub-judul">Form Login Asesmen</p>
+                </div>
+
+                <div class="peringatan" id="peringatanLogin">
+                    <p id="teksPeringatan">⚠️ Asesmen Sedang Berlangsung</p>
+                </div>
+
+                <form id="formLogin" onsubmit="event.preventDefault(); prosesLogin();">
+                    <div class="grup-input">
+                        <label>User ID / NIP / NUPTK</label>
+                        <input type="text" id="inpUserID" placeholder="Masukkan nomor identitas Anda" required>
+                    </div>
+                    <div class="grup-input">
+                        <label>Kata Sandi</label>
+                        <input type="password" id="inpSandi" placeholder="Masukkan kata sandi" required>
+                    </div>
+                    <button type="submit" class="tombol-utama" id="btnLogin" style="width:100%;">Masuk ke Sistem</button>
+                </form>
+
+                <div class="bantuan">
+                    <p><a href="#">Lupa Kata Sandi?</a></p>
+                    <p>Hubungi admin madrasah atau layanan bantuan EMIS GTK</p>
+                </div>
+
+                <a href="#" class="kembali-link" onclick="tampilkanHalaman('beranda')">← Kembali ke Halaman Utama</a>
+            </div>
+        </div>
+
+        <!-- GAMBAR BANNER DI SEBELAH KANAN -->
+        <div class="login-banner-kanan">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMxhJmgtlpe2nLErSACOFPDbUiOovqpZG1_yfLMfE6l1vdhSYoHuxWDBQziiWhROKSRrjqO5RpTw9Ge0-w36HHiyd82wvCEBstygytURnmDYLmOTAs05nvtuHQmouZOAjsJ24D34GKEu7l8zwQxiDHahsopYQoPiv8rDtXwnBU3Q03QbQMgJfehUzSeGA/s320/Cuplikan%20layar%202026-09-25%20103545.png" alt="Banner AKGTK">
+            <div class="login-banner-teks">
+                <h2>Asesmen Kompetensi Guru dan Tenaga Kependidikan</h2>
+                <p>Memetakan kompetensi guru, kepala dan pengawas madrasah sebagai acuan pembinaan & pengembangan profesi pendidikan madrasah.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="kaki">
+        <p>© 2026 Kementerian Agama RI — akgtk.kemenag.go.id</p>
+    </footer>
+</div>
+
+<!-- ======================================== ASESMEN ======================================== -->
+<div class="halaman" id="hal-asesmen">
+    <div class="atas-bar" id="atasBarAsesmen">
+        <div>Sedang Mengikuti Asesmen — AKGTK</div>
+        <div id="jamHitung">Waktu: 00:00</div>
+    </div>
+    <header class="kepala" id="menuUtamaAsesmen">
+        <div class="logo-baris">
+            <img src="https://blogger.googleusercontent.com/img/a/AVvXsEg8G1WUhvnFCRVBSFn2wSdcHT9TiUxSnHbxoaEemMztlc1lD7Iaz9-t1yVznkDhUwCqRaMPaMLTm9S9EB00g81jkalMmcCfJewL5lSpYsxGTBEB15Gdt05UGqlsOfPtuHiLBz2aDWCjlTNK_KAb91mi6eybQ7Nep30lR2fmyr36hruoQit6bNR7JkIu=w300" alt="Logo" class="logo-img">
+            <div class="logo-teks">
+                <h1>ASESMEN SEDANG BERLANGSUNG</h1>
+                <p id="namaPesertaKepala">—</p>
+            </div>
+        </div>
+        <nav class="navi">
+            <a href="#" class="tombol-masuk" style="background:var(--merah);" onclick="keluarAsesmen()">Keluar</a>
+        </nav>
+    </header>
+
+    <main class="wadah">
+        <div class="info-peserta">
+            <h3>📋 Data Peserta Asesmen</h3>
+            <dl class="baris"><dt>Nama Lengkap</dt><dd id="dNama">—</dd></dl>
+            <dl class="baris"><dt>User ID</dt><dd id="dUserID">—</dd></dl>
+            <dl class="baris"><dt>NIP</dt><dd id="dNIP">—</dd></dl>
+            <dl class="baris"><dt>Madrasah</dt><dd id="dMadrasah">—</dd></dl>
+            <dl class="baris"><dt>Jenis GTK</dt><dd id="dJenis">—</dd></dl>
+        </div>
+
+        <div id="wadahSoal">
+            <p class="memuat">Memuat soal...</p>
+        </div>
+
+        <div class="berhasil" id="kotakSelesai">
+            <h3>✅ Asesmen Selesai!</h3>
+            <p>Jawaban Anda telah tersimpan ke sistem.</p>
+            <p class="nilai-akhir">Skor Akhir: <span id="nilaiAkhir">0</span> / 100</p>
+            <a href="#" onclick="kembaliKeAwal(); return false;" class="tombol-utama">Kembali ke Halaman Utama</a>
+        </div>
+
+        <div class="baris-tombol" id="tombolKirim">
+            <button type="button" class="tombol-kecil" onclick="keluarAsesmen()">Batalkan & Keluar</button>
+            <button type="button" class="tombol-utama" onclick="kirimJawaban()">Kirim Jawaban & Selesai</button>
+        </div>
+    </main>
+
+    <footer class="kaki">
+        <p>© 2026 Kementerian Agama RI — Asesmen Sedang Berlangsung</p>
+    </footer>
+</div>
+
+<script>
+// Data Global
+let dataPeserta = null;
+let daftarSoal = [];
+let jawabanPengguna = {};
+let waktuMulai, pengaturWaktu;
+
+// === GULIR HEADER TETAP ===
+window.addEventListener('scroll', function() {
+    const kepala = document.querySelector('.kepala.aktif, .kepala:not([style*="display:none"])');
+    const atasBar = document.querySelector('.atas-bar.aktif, .atas-bar:not([style*="display:none"])');
+    if (kepala && atasBar) {
+        if (window.scrollY > 30) { kepala.classList.add('gulir'); atasBar.classList.add('sembunyi'); }
+        else { kepala.classList.remove('gulir'); atasBar.classList.remove('sembunyi'); }
+    }
+});
+
+// === PILIH HALAMAN ===
+function tampilkanHalaman(nama) {
+    document.querySelectorAll('.halaman').forEach(h => h.classList.remove('aktif'));
+    document.getElementById('hal-' + nama).classList.add('aktif');
+    document.querySelectorAll('.navi a').forEach(a => a.classList.remove('aktif'));
+    if (nama === 'beranda') document.querySelector('.navi a[href="#hal-beranda"]').classList.add('aktif');
+    if (nama === 'login') document.querySelector('.navi a[href="#hal-login"]').classList.add('aktif');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// === PROSES LOGIN ===
+async function prosesLogin() {
+    const userid = document.getElementById('inpUserID').value.trim();
+    const sandi = document.getElementById('inpSandi').value.trim();
+    const kotakPesan = document.getElementById('peringatanLogin');
+    const teksPesan = document.getElementById('teksPeringatan');
+    const tombol = document.getElementById('btnLogin');
+
+    kotakPesan.classList.remove('tampil');
+    tombol.disabled = true; tombol.textContent = 'Memeriksa...';
+
+    try {
+        const res = await fetch(`${URL_APPSCRIPT}?aksi=ambilPeserta&userid=${encodeURIComponent(userid)}&sandi=${encodeURIComponent(sandi)}`);
+        const hasil = await res.json();
+
+        if (!hasil.sukses) {
+            teksPesan.textContent = '⚠️ ' + hasil.pesan;
+            kotakPesan.classList.add('tampil');
+            tombol.disabled = false; tombol.textContent = 'Masuk ke Sistem';
+            return;
+        }
+
+        dataPeserta = hasil.data;
+        tampilkanDataPeserta();
+        await muatSoal();
+        tampilkanHalaman('asesmen');
+        mulaiWaktu();
+
+    } catch (err) {
+        teksPesan.textContent = '⚠️ Gangguan jaringan: ' + err.message;
+        kotakPesan.classList.add('tampil');
+        tombol.disabled = false; tombol.textContent = 'Masuk ke Sistem';
+    }
+}
+
+// === TAMPIL DATA PESERTA ===
+function tampilkanDataPeserta() {
+    document.getElementById('dNama').textContent = dataPeserta.Nama;
+    document.getElementById('dUserID').textContent = dataPeserta.UserID;
+    document.getElementById('dNIP').textContent = dataPeserta.NIP;
+    document.getElementById('dMadrasah').textContent = dataPeserta.Madrasah;
+    document.getElementById('dJenis').textContent = dataPeserta.JenisGTK;
+    document.getElementById('namaPesertaKepala').textContent = dataPeserta.Nama;
+}
+
+// === AMBIL SOAL DARI SHEET ===
+async function muatSoal() {
+    const wadah = document.getElementById('wadahSoal');
+    wadah.innerHTML = '<p class="memuat">Memuat soal...</p>';
+
+    try {
+        const res = await fetch(`${URL_APPSCRIPT}?aksi=ambilSoal`);
+        const hasil = await res.json();
+        if (!hasil.sukses) throw new Error(hasil.pesan);
+
+        daftarSoal = hasil.soal;
+        jawabanPengguna = {};
+        tampilkanSoal();
+
+    } catch (err) {
+        wadah.innerHTML = `<p style="color:var(--merah);">Gagal memuat soal: ${err.message}</p>`;
+    }
+}
+
+// === TAMPILKAN SOAL ===
+function tampilkanSoal() {
+    const wadah = document.getElementById('wadahSoal');
+    wadah.innerHTML = '';
+
+    daftarSoal.forEach((soal) => {
+        const blok = document.createElement('div');
+        blok.className = 'soal-baris';
+        blok.innerHTML = `
+            <p class="soal-teks"><span class="nomor">${soal.no}</span>${soal.tanya}</p>
+            <label class="pilihan" data-no="${soal.no}" data-jawab="A">
+                <input type="radio" name="soal${soal.no}" value="A"> ${soal.A}
+            </label>
+            <label class="pilihan" data-no="${soal.no}" data-jawab="B">
+                <input type="radio" name="soal${soal.no}" value="B"> ${soal.B}
+            </label>
+            <label class="pilihan" data-no="${soal.no}" data-jawab="C">
+                <input type="radio" name="soal${soal.no}" value="C"> ${soal.C}
+            </label>
+            <label class="pilihan" data-no="${soal.no}" data-jawab="D">
+                <input type="radio" name="soal${soal.no}" value="D"> ${soal.D}
+            </label>
+        `;
+        wadah.appendChild(blok);
+    });
+
+    wadah.querySelectorAll('.pilihan').forEach(pil => {
+        pil.addEventListener('click', function() {
+            const no = this.dataset.no;
+            jawabanPengguna[no] = this.dataset.jawab;
+            wadah.querySelectorAll(`[data-no="${no}"]`).forEach(l => l.classList.remove('terpilih'));
+            this.classList.add('terpilih');
+            this.querySelector('input').checked = true;
+        });
+    });
+}
+
+// === PENGHITUNG WAKTU ===
+function mulaiWaktu() {
+    waktuMulai = new Date();
+    pengaturWaktu = setInterval(() => {
+        const detik = Math.floor((new Date() - waktuMulai)/1000);
+        const m = Math.floor(detik/60).toString().padStart(2,'0');
+        const d = (detik%60).toString().padStart(2,'0');
+        document.getElementById('jamHitung').textContent = `Waktu: ${m}:${d}`;
+    }, 1000);
+}
+
+// === KIRIM JAWABAN KE SHEET ===
+async function kirimJawaban() {
+    if (!confirm('Yakin mengirim jawaban? Tidak dapat diubah setelah dikirim.')) return;
+
+    clearInterval(pengaturWaktu);
+    let skor = 0, totalBobot = 0;
+    daftarSoal.forEach(soal => {
+        totalBobot += Number(soal.bobot) || 10;
+        if (jawabanPengguna[soal.no] === soal.kunci) skor += Number(soal.bobot) || 10;
+    });
+    const nilai = Math.round((skor/totalBobot)*100);
+
+    const dataKirim = {
+        UserID: dataPeserta.UserID,
+        Nama: dataPeserta.Nama,
+        Waktu: new Date().toLocaleString('id-ID'),
+        Jawaban: jawabanPengguna,
+        Skor: nilai,
+        Status: 'Selesai'
+    };
+
+    try {
+        await fetch(URL_APPSCRIPT, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(dataKirim)
+        });
+    } catch (err) {
+        console.warn('Gagal mengirim ke sheet:', err);
+    }
+
+    document.getElementById('wadahSoal').style.display = 'none';
+    document.getElementById('tombolKirim').style.display = 'none';
+    document.getElementById('nilaiAkhir').textContent = nilai;
+    document.getElementById('kotakSelesai').classList.add('tampil');
+}
+
+function keluarAsesmen() {
+    if (confirm('Yakin keluar? Proses akan dihentikan.')) {
+        clearInterval(pengaturWaktu);
+        kembaliKeAwal();
+    }
+}
+
+function kembaliKeAwal() {
+    dataPeserta = null; daftarSoal = []; jawabanPengguna = {};
+    document.getElementById('wadahSoal').style.display = 'block';
+    document.getElementById('tombolKirim').style.display = 'flex';
+    document.getElementById('kotakSelesai').classList.remove('tampil');
+    document.getElementById('wadahSoal').innerHTML = '<p class="memuat">Memuat soal...</p>';
+    document.getElementById('inpUserID').value = '';
+    document.getElementById('inpSandi').value = '';
+    tampilkanHalaman('beranda');
+}
+</script>
+
+</body>
+</html>
